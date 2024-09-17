@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html class="weatherstack index">
+    <head>
+        <meta charset="utf-8">
+        <title>Weather.IO</title>
+        <script>
+            window.addEventListener('scroll', function() {
+                var header = document.querySelector('.header');
+                var scrollPosition = window.scrollY;
+
+                // Calculate the opacity based on scroll position
+                var opacity = scrollPosition > 100 ? 100 : scrollPosition / 100;
+
+                // Set the background color with the calculated opacity
+                header.style.backgroundColor = 'rgba(24, 65, 87, ' + opacity + ')';
+            });
+        </script>
+        <!-- Google Tag Manager -->
+        <script>
+            (function(w, d, s, l, i) {
+                w[l] = w[l] || [];
+                w[l].push({
+                    'gtm.start': new Date().getTime(),
+                    event: 'gtm.js'
+                });
+                var f = d.getElementsByTagName(s)[0],
+                    j = d.createElement(s),
+                    dl = l != 'dataLayer' ? '&l=' + l : '';
+                j.async = true;
+                j.src =
+                    'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+                f.parentNode.insertBefore(j, f);
+            })(window, document, 'script', 'dataLayer', 'GTM-K58DCFS');
+        </script>
+        <!-- End Google Tag Manager -->
+        <script>
+            window.stripePublishableKey = 'pk_live_SbOhR0mPK55dMckhtbSufjdM';
+        </script>
+        <meta name="google-site-verification" content="yDCufI3fgc3DdreycuEwJML88yWxFkTOIv-zorrtGuQ" />
+        <meta name="description" content="Get current weather information, historical data and forecasts using weatherstack - a free world weather REST API supporting millions of global locations." />
+        <meta name="keywords" content="weatherstack, real-time weather, weather forecasts, historical weather data, weather api, weather data php, world weather api, current weather api, weather forecasts API," />
+        <meta name="h1" content="Real-Time & Historical World Weather Data API" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="facebook-domain-verification" content="68ni86tlyu91elhzob3vu4dxafstlr" />
+        <meta name="h1" content="Sign Up - - weatherstack" />
+        <!-- Open Graph Tag - Weatherstack starts here -->
+        <meta property="og:title" content="Weatherstack - Real-Time World Weather REST API" />
+        <meta property="og:description" content="Get current weather information, historical data and forecasts using weatherstack - a free world weather REST API supporting millions of global locations." />
+        <meta property="og:url" content="https://weatherstack.com/" />
+        <meta property="og:image" content="https://weatherstack.com/site_images/weatherstack_logo_white.png" />
+        <meta property="og:type" content="website" />
+        <meta property="og:locale" content="en_US" />
+        <meta property="og:site_name" content="Weatherstack" />
+        <!-- Open Graph Tag - Weatherstack ends here -->
+        <link rel="stylesheet" href="https://cdn.linearicons.com/free/1.0.0/icon-font.min.css">
+        <link rel="canonical" href="https://weatherstack.com/">
+        <link rel="shortcut icon" href="https://weatherstack.com/site_images/weatherstack_shortcut_icon.ico">
+        <link rel="apple-touch-icon" href="https://weatherstack.com/site_images/weatherstack_icon.png">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+        <script src="{{ url_for('static', filename='site_js/jquery-1.11.3.min.js') }}" type="text/javascript"></script>
+        <link href="{{ url_for('static', filename='site_css/style.css') }}" rel="stylesheet" media="screen">
+    </head>
+    <body class="">
+        <!-- Google Tag Manager (noscript) -->
+        <noscript>
+            <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-K58DCFS" height="0" width="0" style="display:none;visibility:hidden"></iframe>
+        </noscript>
+        <!-- End Google Tag Manager (noscript) -->
+        <div>
+
+            <nav class="header index" style="position: fixed; top: 0px; left: 0px; width: 100%; background-color: rgba(24, 65, 87, 0); z-index: 1000;">
+                <div class="container">
+                    <div class="logo">
+                       <a title="weatherstack Logo" href="/"><img draggable="false" alt="weatherstack Logo" width="202" height="28" src="https://i.postimg.cc/nLSb94M6/Picsart-24-09-13-20-00-25-875.png"></a>
+                    </div>
+                    <!--<span data-header-toggle="true" class="mobile_menu_icon"></span>-->
+                    <ul>
+                        <li><a title="Project Documentation" href="https://github.com/Ankit8544/Weather_Forcasting">Documentation</a></li>
+                        <li><a title="Blog" href="https://ankitkumar875740.blogspot.com/">Blog</a></li>
+                        <li class="action cta"><a title="Hire Me" href="https://www.linkedin.com/in/ankit-kumar-966b52275/">Hire Me</a></li>
+                    </ul>
+                </div>
+            </nav>
+            
+            <section class="hero index">
+                <div class="container">
+                    <div class="hero_main"> 
+                        <div class="inline">
+                            <h1 style="font-weight:700;font-size:32px;margin-bottom:20px;letter-spacing:0;margin-top:0;line-height: 40px;">Accurate Weather Forecasts at <br>Your Fingertips</h1>
+                            <h4>Retrieve instant, accurate weather information for<br>any location in the world.</h4>
+                            <span class="number_customers">Trusted by 1000000 users worldwide</span>
+                            <a title="Explore Metropolitan Cities Weather Conditions" class="button cta" href="#main_feature">Explore Metro Cities</a> <span class="friendly"> — start exploring!</span>
+                        </div>
+                        {% if latitude and longitude %}
+                        <div class="weather_animated">
+                            <div class="location">
+                                <span data-api="location">{{ location['Full Address'] if location else 'Not available' }}</span>
+                            </div>
+                            <div class="main_left">
+                                <i data-api="current_icon" class="{{ 'full_clouds' if current_weather else 'no_icon' }}"></i>
+                                <span data-api="current_main_descr">{{ current_weather.get('Weather', 'Not available') }}</span>
+                            </div>
+                            <div class="main_right">
+                                <span data-api="current_wind_speed" class="wind">Wind: {{ current_weather.get('Wind Speed', 'Not available') }} km/h</span>
+                                <span data-api="current_humidity" class="humidity">Humidity: {{ current_weather.get('Humidity', 'Not available') }} mm</span>
+                                <span data-api="current_pressure" class="pressure">Pressure: {{ current_weather.get('Pressure', 'Not available') }} hPa</span>
+                                <span data-api="current_temperature" class="temperature">{{ current_weather.get('Current Temperature', 'Not available') }}°C</span>
+                            </div>
+                            <div data-api="forecast_week" class="week">
+                                {% for day in current_location_forecast %}
+                                    <div class="day">
+                                        <span class="name">{{ day['Day Name'][:3].upper() }}</span>
+                                        <i class="{{ 'full_clouds' if day['Weather Description'] else 'no_icon' }}"></i>
+                                        <span class="temperature">{{ day['Temperature (°C)'] }}°C</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <p>Could not retrieve weather data due to missing coordinates.</p>
+                    {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="customers">
+                <div class="container">
+                    <ul>
+                        <li>Happy Customers:</li>
+                        <li class="deloitte"></li>
+                        <li class="microsoft"></li>
+                        <li class="warnerbros"></li>
+                        <li class="wawa"></li>
+                        <li class="schneider"></li>
+                        <li class="ericsson"></li>
+                    </ul>
+                </div>
+            </section>
+
+            <section class="show">
+                <div class="container">
+                    <div class="boxes">
+                        <div class="box realtime">
+                            <h5 class="heading">Real-Time, History, Forecast</h5>
+                            <p>Our API covers global weather data across the board — from a multi-year history all the way to live information and accurate weather forecasts.</p>
+                        </div>
+                        <div class="box locations">
+                            <h5 class="heading">Millions of Locations</h5>
+                            <p>Make use of live or hour-by-hour weather data for millions of cities and towns worldwide, supporting a variety methods to look up any location.</p>
+                        </div>
+                        <div class="box uptime">
+                            <h5 class="heading">Rock-Solid Uptime &amp; Speed</h5>
+                            <p>Powered by best-in-class cloud infrastructure, our API delivers data in milliseconds around the clock with an uptime of nearly 100%.</p>
+                        </div>
+                        <div class="box price">
+                            <h5 class="heading">Start Free, Upgrade Later</h5>
+                            <p>Start testing the API immediately by signing up for our Free Plan. You can always upgrade later — no strings attached.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="main_feature" class="main_feature">
+                <div class="container">
+                    <div class="details">
+                        <h4>Explore Metropolitan Cities Weather</h4>
+                        <p>Get Predicted Weather Data for Major Cities...</p>
+                        <ul>
+                            <li class="realtime"><a href="/predict?city=National Capital Region">National Capital Region</a></li>
+                            <li class="historical"><a href="/predict?city=Mumbai">Mumbai</a></li>
+                            <li class="forecasts"><a href="/predict?city=Kolkata">Kolkata</a></li>
+                            <li class="autocomplete"><a href="/predict?city=Chennai">Chennai</a></li>
+                            <li class="bulk"><a href="/predict?city=Bangalore">Bangalore</a></li>
+                            <li class="realtime"><a href="/predict?city=Hyderabad">Hyderabad</a></li>
+                            <li class="historical"><a href="/predict?city=Pune">Pune</a></li>
+                            <li class="forecasts"><a href="/predict?city=Andhra Pradesh Capital Region">Andhra Pradesh Capital Region</a></li>
+                            <li class="autocomplete"><a href="/predict?city=Ahmedabad">Ahmedabad</a></li>
+                            <li class="bulk"><a href="/predict?city=Surat">Surat</a></li>
+                            <li class="bulk"><a href="/predict?city=Visakhapatnam">Visakhapatnam</a></li>
+                            <li class="bulk"><a href="/predict?city=Jaipur">Jaipur</a></li>
+                            <li class="bulk"><a href="/predict?city=Lucknow">Lucknow</a></li>
+                            <li class="bulk"><a href="/predict?city=Kanpur">Kanpur</a></li>
+                        </ul>                        
+                    </div>
+                    <img draggable="false" alt="World Weather Map" src="https://weatherstack.com/site_images/world_map_vector.svg" width="635" height="347">
+                </div>
+            </section>
+            
+            <section class="grid">
+                <div class="container">
+                    <h4>Join more than 75,000 companies worldwide using the weatherstack API</h4>
+                    <h5>We are proud of delivering accurate weather data to some of the smartest brands out there.</h5>
+                </div>
+            </section>
+
+            <footer>
+                <div class="container custom-container">
+                    <div class="right_side copyright-section">
+                        <div class="footer-logo">
+                            <a href="/"><img draggable="false" class="logo" src="https://i.postimg.cc/nLSb94M6/Picsart-24-09-13-20-00-25-875.png" alt="Weatcherstack Logo" width="197" height="35"></a>
+                        </div>
+                        <div class="social-links">
+                            <div class="github social-logo">
+                                <a target="_blank" href="https://github.com/Ankit8544"><img draggable="false"  src="https://weatherstack.com/site_images/github-original.svg" width="25" height="25"></a>
+                            </div>
+                            <div class="facebook social-logo">
+                                <a target="_blank" href="https://www.facebook.com/O.Sharma.Jii.07"><img draggable="false" src="https://weatherstack.com/site_images/facebook-original.svg" width="25" height="25"></a>
+                            </div>
+                            <div class="instagram social-logo">
+                                <a target="_blank" href="https://www.instagram.com/mr._.sharma.07/"><img draggable="false" src="https://weatherstack.com/site_images/instagram.png" width="25" height="25"></a>
+                            </div>
+                            <div class="twitter social-logo">
+                                <a target="_blank" href="https://www.twitter.com/AnkitKr8544"><img draggable="false" src="https://weatherstack.com/site_images/twitter-original.svg" width="25" height="25"></a>
+                            </div>
+                            <div class="linkedin social-logo">
+                                <a target="_blank" href="https://www.linkedin.com/in/ankit-kumar-966b52275/"><img draggable="false" src="https://weatherstack.com/site_images/linkedin-original.svg" width="25" height="25"></a>
+                            </div>
+                        </div>
+                    </div> 
+                </div>
+                <br>
+                <div class="container">
+                    <div class="copyright-text">
+                        <span>© 2024 Weather.IO, All rights reserved.</span>
+                        <br>
+                        <a target="_blank" href="https://github.com/Ankit8544/Weather_Forcasting">Documentation</a> | <a target="_blank" href="https://ankitkumar875740.blogspot.com/">Blog</a> | <a href="https://www.linkedin.com/in/ankit-kumar-966b52275/">Hire Me</a>
+                    </div>
+                </div>
+            </footer>
+
+        </div>
+
+        <script src="{{ url_for('static', filename='site_js/scripts.js') }}"></script>
+        <script src="https://www.google.com/recaptcha/api.js"></script>
+    </body>
+</html>

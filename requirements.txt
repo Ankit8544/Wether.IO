@@ -1,0 +1,11 @@
+Flask
+requests
+pandas
+numpy
+python-dotenv
+scikit-learn
+tensorflow
+matplotlib
+mysql-connector-python
+geocoder
+gunicorn
