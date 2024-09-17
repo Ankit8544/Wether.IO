@@ -94,7 +94,7 @@
                         {% if latitude and longitude %}
                         <div class="weather_animated">
                             <div class="location">
-                                <span data-api="location">{{ location['Full Address'] if location else 'Not available' }}</span>
+                                <div data-api="location">{{ location['Full Address'] if location else 'Not available' }}</div>
                             </div>
                             <div class="main_left">
                                 <i data-api="current_icon" class="{{ 'full_clouds' if current_weather else 'no_icon' }}"></i>
