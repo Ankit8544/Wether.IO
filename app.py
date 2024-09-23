@@ -147,31 +147,6 @@ def get_address_nominatim(latitude, longitude):
         'Country': address.get('country', 'Unknown')
     }
 
-def fetch_current_weather_forecast(latitude, longitude):
-    num_days = 5
-    # 7-Day Forecast API (One Call API)
-    forecast_url = f"https://api.openweathermap.org/data/3.0/onecall?lat={latitude}&lon={longitude}&exclude=minutely,hourly,alerts&appid=6b33a74b8dd94a967b2622a5eb6c1d93&units=metric"
-    forecast_response = requests.get(forecast_url)
-    forecast_data = forecast_response.json()
-
-    # Extract relevant forecast data starting from tomorrow
-    forecast_list = []
-    for day in forecast_data['daily'][1:num_days+1]:  # Fetch data for num_days
-        date = datetime.fromtimestamp(day['dt'])
-        formatted_date = date.strftime('%Y-%m-%d')
-        day_name = date.strftime('%A')
-        forecast = {
-            "Date": formatted_date,
-            "Day Name": day_name,
-            "Temperature (°C)": round((day['temp']['day'] + day['temp']['night']) / 2, 2),
-            "Humidity (%)": day['humidity'],
-            "Weather Description": day['weather'][0]['description'],
-            "Wind Speed (Km/h)": round(day['wind_speed'] * 3.6, 1)
-        }
-        forecast_list.append(forecast)
-
-    return forecast_list
-
 ### METO CITY DETAIL -
 # Function to load the model and scaler
 def load_model_and_scaler(city_name):
@@ -219,14 +194,18 @@ def index():
     longitude = 85.1376
     location = get_address_nominatim(latitude, longitude)
     current_weather = get_current_weather(latitude, longitude)
-    current_location_forecast = fetch_current_weather_forecast(latitude, longitude)
+    
+    result = predict_temperature(city_name='Patna')
+    result['Predicted Temperature'] = [round(temp, 2) for temp in result['Predicted Temperature']]
+    day_names = [datetime.strptime(date_str, '%Y-%m-%d').strftime('%a') for date_str in result['Date']]
+    combined_data = zip(day_names, result['Predicted Temperature'])
 
     return render_template('index.html',
                            latitude=latitude,
                            longitude=longitude,
                            location=location,
                            current_weather=current_weather,
-                           current_location_forecast=current_location_forecast)
+                           result=combined_data)
 
 @app.route('/predict', methods=['GET', 'POST'])
 def predict():
