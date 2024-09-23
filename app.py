@@ -1,30 +1,19 @@
 ### IMPORTS - 
 from flask import Flask, render_template, request
 import requests
-import pandas as pd
 import numpy as np
 from dotenv import load_dotenv
-import os
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
 from tensorflow.keras.callbacks import EarlyStopping
+from keras.models import load_model
+import pickle
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
-import mysql.connector
-import matplotlib.pyplot as plt
-import io
-import random
-import geocoder
 import warnings
 warnings.filterwarnings('ignore')
 
-load_dotenv()
-API_KEY = os.getenv("API_KEY")
-MYSQL_HOST = os.getenv("MYSQL_HOST")
-MYSQL_USER = os.getenv("MYSQL_USER")
-MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
-MYSQL_DATABASE = os.getenv("MYSQL_DATABASE")
 Metropolitan_Cities_Details = {
     "Patna": {
         "State/UT": "Bihar",
@@ -102,7 +91,6 @@ Metropolitan_Cities_Details = {
         "Longitude": 80.3319,
     }
 }
-City_List = ['Patna', 'National Capital Region', 'Mumbai', 'Kolkata', 'Chennai', 'Bangalore', 'Hyderabad', 'Pune', 'Andhra Pradesh Capital Region', 'Ahmedabad', 'Surat', 'Visakhapatnam', 'Jaipur', 'Lucknow', 'Kanpur']
 DEFAULT_CITY_NAME = 'Patna'
 BASE_URL = "https://api.openweathermap.org/data/3.0/onecall/day_summary"
 Current_Date = datetime.now().date()
@@ -127,7 +115,7 @@ def User_Current_Location():
 
 def get_current_weather():
     latitude, longitude = User_Current_Location()
-    url = f'http://api.openweathermap.org/data/2.5/weather?lat={latitude}&lon={longitude}&appid={API_KEY}&units=metric'
+    url = f'http://api.openweathermap.org/data/2.5/weather?lat={latitude}&lon={longitude}&appid=6b33a74b8dd94a967b2622a5eb6c1d93&units=metric'
     response = requests.get(url)
     data = response.json()
 
@@ -165,7 +153,7 @@ def fetch_current_weather_forecast():
     num_days = 5
     latitude, longitude = User_Current_Location()
     # 7-Day Forecast API (One Call API)
-    forecast_url = f"https://api.openweathermap.org/data/3.0/onecall?lat={latitude}&lon={longitude}&exclude=minutely,hourly,alerts&appid={API_KEY}&units=metric"
+    forecast_url = f"https://api.openweathermap.org/data/3.0/onecall?lat={latitude}&lon={longitude}&exclude=minutely,hourly,alerts&appid=6b33a74b8dd94a967b2622a5eb6c1d93&units=metric"
     forecast_response = requests.get(forecast_url)
     forecast_data = forecast_response.json()
 
@@ -188,276 +176,42 @@ def fetch_current_weather_forecast():
     return forecast_list
 
 ### METO CITY DETAIL -
-def  connect_to_db():
-    # Create a connection to the database
-    conn = mysql.connector.connect(
-        host = MYSQL_HOST,
-        port=3306,
-        user = MYSQL_USER,
-        password = MYSQL_PASSWORD,
-        database = MYSQL_DATABASE
-    )
-    return conn  
+# Function to load the model and scaler
+def load_model_and_scaler(city_name):
+    model = load_model(f"./artifacts/{city_name}_model.h5")#{city_name}_model.h5")
+    with open(f"./artifacts/{city_name}_scaler.pkl", 'rb') as f:
+        scaler = pickle.load(f)
+    return model, scaler
 
-def check_data(city_name):
-    conn = connect_to_db()
-    cursor = conn.cursor()
-    # Check if the table exists in the database
-    query = f"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'weather_data' AND table_name = '{city_name}'"
-    cursor.execute(query)
-    table_exists = cursor.fetchone()[0]
-    # Initialize df to handle cases where the table does not exist
-    df = None
-    # If the table exists, load it into a DataFrame
-    if table_exists:
-        df = pd.read_sql(f"SELECT * FROM {city_name}", conn)
-    else:
-        print(f"Table '{city_name}' does not exist in the database.")
-    # Close the connection
-    cursor.close()
-    conn.close()
-    return df
-
-def fetch_weather_data(city, start_date, end_date):
-    LAT = Metropolitan_Cities_Details[city]['Latitude']
-    LON = Metropolitan_Cities_Details[city]['Longitude']
-    weather_data = {
-        'date': [],
-        'temp_min': [],
-        'temp_max': [],
-        'humidity': [],
-        'wind_speed': []
-    }
-    # Loop through the dates
-    current_date = start_date
-    while current_date <= end_date:
-        date_str = current_date.strftime('%Y-%m-%d')    
-        # Make the API call for each date
-        url = f"{BASE_URL}?lat={LAT}&lon={LON}&date={date_str}&appid={API_KEY}&units=metric"
-        response = requests.get(url)
-        if response.status_code == 200:
-            data = response.json()
-            min_temp = data['temperature']['min']
-            max_temp = data['temperature']['max']
-            humidity = data['humidity']['afternoon']
-            wind_speed = data['wind']['max']['speed']                
-            weather_data['date'].append(current_date)
-            weather_data['temp_min'].append(min_temp)
-            weather_data['temp_max'].append(max_temp)
-            weather_data['humidity'].append(humidity)
-            weather_data['wind_speed'].append(wind_speed)
-        # Move to the next date
-        current_date += timedelta(days=1)
-    # Create a DataFrame from the collected data
-    df = pd.DataFrame(weather_data)
-    return df
-
-def preprocess_data(df):
-    # Sort DataFrame by date
-    df = df.sort_values('date')
+# Function to make predictions
+def predict_temperature(city_name):
+    model, scaler = load_model_and_scaler(city_name)
     
-    # Compute daily average temperature
-    df['temp_avg'] = (df['temp_min'] + df['temp_max']) / 2
+    # Prepare the last 7 days of test data
+    last_7_days = np.random.rand(7, 3)  # Replace with actual last 7 days data
+    last_7_days_scaled = scaler.transform(last_7_days)
     
-    # Define features and target variable
-    features = ['temp_avg', 'humidity', 'wind_speed']
-    target = 'temp_avg'
-    
-    # Normalize features
-    scaler = MinMaxScaler(feature_range=(0, 1))
-    scaled_data = scaler.fit_transform(df[features])
-    
-    # Prepare X and y
-    X = []
-    y = []
-    
-    # Use the previous 7 days to predict the next day's temperature
-    for i in range(7, len(scaled_data)):
-        X.append(scaled_data[i-7:i])
-        y.append(scaled_data[i][0])  # temp_avg is the target variable
-    
-    # Convert lists to numpy arrays
-    X, y = np.array(X), np.array(y)
-    
-    return X, y, scaler
-
-def build_model(input_shape):
-    model = Sequential()
-    model.add(LSTM(units=50, return_sequences=True, input_shape=input_shape))
-    model.add(LSTM(units=50, return_sequences=False))
-    model.add(Dense(units=25))
-    model.add(Dense(units=1))
-    
-    model.compile(optimizer='adam', loss='mean_squared_error')
-    return model
-
-def predict_next_days(model, last_7_days, scaler):
     predictions = []
-    input_sequence = last_7_days.copy()
-    
+    input_sequence = last_7_days_scaled.copy()
+
     for _ in range(5):  # Predict for the next 5 days
-        # Predict the next day
-        pred = model.predict(np.array([input_sequence]))  # Shape (1, 1)
+        pred = model.predict(np.array([input_sequence]))
         predictions.append(pred[0][0])
         
-        # Reshape pred to have the same number of features as input_sequence
-        pred_reshaped = np.zeros((1, input_sequence.shape[1]))  # Create a zero array with correct shape
-        pred_reshaped[0, 0] = pred  # Assign the prediction to the correct position
+        pred_reshaped = np.zeros((1, input_sequence.shape[1]))
+        pred_reshaped[0, 0] = pred
         
-        # Shift the input sequence forward, appending the new prediction
         input_sequence = np.vstack((input_sequence[1:], pred_reshaped))
     
     # Inverse transform predictions back to original scale
     predictions = scaler.inverse_transform([[pred, 0, 0] for pred in predictions])[:, 0]
     
-    return predictions 
+    predicted_dates = [(datetime.now().date() + timedelta(days=i+1)).strftime('%Y-%m-%d') for i in range(5)]
+    return {
+        'Date': predicted_dates,
+        'Predicted Temperature': predictions
+    }
 
-def save_to_mysql(df, city_name):
-    try:
-        conn = connect_to_db()
-        cursor = conn.cursor()
-
-        # Create table query (using city name as table name)
-        create_table_query = f"""
-        CREATE TABLE IF NOT EXISTS `{city_name}` (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            date DATE,
-            temp_min FLOAT,
-            temp_max FLOAT,
-            humidity FLOAT,
-            wind_speed FLOAT
-        );
-        """
-        cursor.execute(create_table_query)
-        
-        # Insert data into the table
-        for index, row in df.iterrows():
-            insert_query = f"""
-            INSERT INTO `{city_name}` (date, temp_min, temp_max, humidity, wind_speed)
-            VALUES (%s, %s, %s, %s, %s);
-            """
-            cursor.execute(insert_query, (row['date'], row['temp_min'], row['temp_max'], row['humidity'], row['wind_speed']))
-        
-        # Commit the changes
-        conn.commit()
-        print(f"Data successfully saved to {city_name} table in MySQL.")
-    
-    except mysql.connector.Error as err:
-        print(f"Error: {err}")
-    
-    finally:
-        if conn.is_connected():
-            cursor.close()
-            conn.close()
-
-def append_new_to_mysql(df, city_name):
-    try:
-        conn = connect_to_db()
-        cursor = conn.cursor()
-
-        # Fetch existing dates from the table
-        cursor.execute(f"SELECT date FROM `{city_name}`")
-        existing_dates = set(row[0] for row in cursor.fetchall())
-
-        # Filter out rows in df that already exist in the MySQL table
-        df['date'] = pd.to_datetime(df['date'])  # Ensure 'date' column is in datetime format
-        df_to_insert = df[~df['date'].isin(existing_dates)]
-
-        # Insert only new data into the table
-        if not df_to_insert.empty:
-            insert_query = f"""
-            INSERT INTO `{city_name}` (date, temp_min, temp_max, humidity, wind_speed)
-            VALUES (%s, %s, %s, %s, %s);
-            """
-            for index, row in df_to_insert.iterrows():
-                cursor.execute(insert_query, (row['date'].strftime('%Y-%m-%d'), row['temp_min'], row['temp_max'], row['humidity'], row['wind_speed']))
-
-            # Commit the changes
-            conn.commit()
-            print(f"New data successfully appended to {city_name} table in MySQL.")
-        else:
-            print("No new data to append.")
-
-    except mysql.connector.Error as err:
-        print(f"Error: {err}")
-    
-    finally:
-        if conn.is_connected():
-            cursor.close()
-            conn.close()
-
-def main(CITY_NAME, City_List, Start_Date, Current_Date):
-    # Ensure Current_Date is a date object
-    if isinstance(Current_Date, datetime):
-        Current_Date = Current_Date.date()
-
-    if CITY_NAME in City_List:
-        Available_df = check_data(CITY_NAME.lower())
-        
-        if Available_df is not None and not Available_df.empty:
-            
-            last_date = Available_df.tail(1)['date'].values[0]
-            if isinstance(last_date, datetime):
-                last_date = last_date.date()
-            
-            if Current_Date == last_date:
-                    
-                X, y, scaler = preprocess_data(Available_df)
-                X_train, X_test = X[:-5], X[-5:]
-                y_train, y_test = y[:-5], y[-5:]
-                model = build_model((X_train.shape[1], X_train.shape[2]))
-                early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
-                model.fit(X_train, y_train, epochs=100, batch_size=1, validation_split=0.2, callbacks=[early_stopping], verbose=0)
-                last_7_days = X_test[-1]
-                predicted_temperatures = predict_next_days(model, last_7_days, scaler)
-                predicted_dates = [(Current_Date + timedelta(days=i+1)).strftime('%Y-%m-%d') for i in range(5)]
-                Final_Outcome = {
-                    'Date': predicted_dates,
-                    'Predicted Temperature': predicted_temperatures
-                }     
-            
-            else:
-                
-                New_Start_Date = last_date + timedelta(days=1)
-                New_df = fetch_weather_data(CITY_NAME, New_Start_Date, Current_Date)
-                Updated_df = pd.concat([Available_df, New_df], ignore_index=True)
-                Updated_df = Updated_df.drop_duplicates(subset='date', keep='last')
-                append_new_to_mysql(Updated_df, CITY_NAME.lower())
-                X, y, scaler = preprocess_data(Updated_df)
-                X_train, X_test = X[:-5], X[-5:]
-                y_train, y_test = y[:-5], y[-5:]
-                model = build_model((X_train.shape[1], X_train.shape[2]))
-                early_stopping = EarlyStopping( monitor='val_loss', patience=10, restore_best_weights=True)
-                model.fit(X_train, y_train, epochs=100, batch_size=1, validation_split=0.2, callbacks=[early_stopping], verbose=0)
-                last_7_days = X_test[-1]
-                predicted_temperatures = predict_next_days(model, last_7_days, scaler)
-                predicted_dates = [(Current_Date + timedelta(days=i+1)).strftime('%Y-%m-%d') for i in range(5)]
-                Final_Outcome = {
-                    'Date': predicted_dates,
-                    'Predicted Temperature': predicted_temperatures
-                }
-                    
-        else:
-            
-            New_df = fetch_weather_data(CITY_NAME, Start_Date, Current_Date)
-            save_to_mysql(New_df, CITY_NAME.lower())
-            X, y, scaler = preprocess_data(New_df)
-            X_train, X_test = X[:-5], X[-5:]
-            y_train, y_test = y[:-5], y[-5:]
-            model = build_model((X_train.shape[1], X_train.shape[2]))
-            early_stopping = EarlyStopping( monitor='val_loss', patience=10, restore_best_weights=True)
-            model.fit(X_train, y_train, epochs=100, batch_size=1, validation_split=0.2, callbacks=[early_stopping])
-            last_7_days = X_test[-1]
-            predicted_temperatures = predict_next_days(model, last_7_days, scaler)
-            predicted_dates = [(Current_Date + timedelta(days=i+1)).strftime('%Y-%m-%d') for i in range(5)]
-            Final_Outcome = {
-                'Date': predicted_dates,
-                'Predicted Temperature': predicted_temperatures
-            }
-
-        return Final_Outcome
-    else :
-        return f"We are not able to forecast the weather condition of {CITY_NAME}"
 
 app = Flask(__name__)
 
@@ -477,21 +231,12 @@ def index():
 
 @app.route('/predict', methods=['GET', 'POST'])
 def predict():
-    CITY_NAME = request.args.get('city')
-    result = main(CITY_NAME=DEFAULT_CITY_NAME, City_List=City_List, Start_Date=Start_Date, Current_Date=Current_Date)
+    CITY_NAME = request.args.get('city','Patna')
+    result = predict_temperature(city_name=CITY_NAME)
     result['Predicted Temperature'] = [round(temp, 2) for temp in result['Predicted Temperature']]
     day_names = [datetime.strptime(date_str, '%Y-%m-%d').strftime('%a') for date_str in result['Date']]
     combined_data = zip(day_names, result['Predicted Temperature'])
     return render_template('report.html', dates=day_names, temperatures=result['Predicted Temperature'], result=combined_data, city_name=CITY_NAME)
-
-# Add this function to disable caching during development
-@app.after_request
-def add_header(response):
-    # Disable caching during development
-    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
-    return response
     
 if __name__ == '__main__':
     app.run()
