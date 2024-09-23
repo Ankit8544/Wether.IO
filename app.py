@@ -2,96 +2,12 @@
 from flask import Flask, render_template, request
 import requests
 import numpy as np
-from dotenv import load_dotenv
-from sklearn.preprocessing import MinMaxScaler
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense
-from tensorflow.keras.callbacks import EarlyStopping
 from keras.models import load_model
 import pickle
-import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings('ignore')
 
-Metropolitan_Cities_Details = {
-    "Patna": {
-        "State/UT": "Bihar",
-        "Latitude": 25.5941,
-        "Longitude": 85.1376,
-    },
-    "National Capital Region": {
-        "State/UT": "Delhi, Haryana, Rajasthan, Uttar Pradesh",
-        "Latitude": 28.6139,
-        "Longitude": 77.2090,
-    },
-    "Mumbai": {
-        "State/UT": "Maharashtra",
-        "Latitude": 19.0760,
-        "Longitude": 72.8777,
-    },
-    "Kolkata": {
-        "State/UT": "West Bengal",
-        "Latitude": 22.5726,
-        "Longitude": 88.3639,
-    },
-    "Chennai": {
-        "State/UT": "Tamil Nadu",
-        "Latitude": 13.0827,
-        "Longitude": 80.2707,
-    },
-    "Bangalore": {
-        "State/UT": "Karnataka",
-        "Latitude": 12.9716,
-        "Longitude": 77.5946,
-    },
-    "Hyderabad": {
-        "State/UT": "Telangana",
-        "Latitude": 17.3850,
-        "Longitude": 78.4867,
-    },
-    "Pune": {
-        "State/UT": "Maharashtra",
-        "Latitude": 18.5204,
-        "Longitude": 73.8567,
-    },
-    "Andhra Pradesh Capital Region": {
-        "State/UT": "Andhra Pradesh",
-        "Latitude": 16.5062,
-        "Longitude": 80.6480,
-    },
-    "Ahmedabad": {
-        "State/UT": "Gujarat",
-        "Latitude": 23.0225,
-        "Longitude": 72.5714,
-    },
-    "Surat": {
-        "State/UT": "Gujarat",
-        "Latitude": 21.1702,
-        "Longitude": 72.8311,
-    },
-    "Visakhapatnam": {
-        "State/UT": "Andhra Pradesh",
-        "Latitude": 17.6868,
-        "Longitude": 83.2185,
-    },
-    "Jaipur": {
-        "State/UT": "Rajasthan",
-        "Latitude": 26.9124,
-        "Longitude": 75.7873,
-    },
-    "Lucknow": {
-        "State/UT": "Uttar Pradesh",
-        "Latitude": 26.8467,
-        "Longitude": 80.9462,
-    },
-    "Kanpur": {
-        "State/UT": "Uttar Pradesh",
-        "Latitude": 26.4499,
-        "Longitude": 80.3319,
-    }
-}
-DEFAULT_CITY_NAME = 'Patna'
 BASE_URL = "https://api.openweathermap.org/data/3.0/onecall/day_summary"
 Current_Date = datetime.now().date()
 Start_Date = (datetime.now() - timedelta(days=3*365)).date()
