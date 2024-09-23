@@ -3,9 +3,7 @@
 This project is a Flask-based web application that fetches real-time weather data, provides weather forecasts, and predicts future weather conditions using machine learning (LSTM). The app uses the OpenWeather API to retrieve weather information for various cities and allows the user to explore current and historical weather data, and even predict future temperatures.
 
 ## Live Link
-You can access the live version of this weather forecasting application [here](#).
-
-Replace the `#` with the actual URL after you’ve deployed your app.
+You can access the live version of this weather forecasting application [here](https://wether-io.onrender.com/).
 
 ## Features
 
