@@ -113,8 +113,7 @@ def User_Current_Location():
         print(f"Error: {e}")
         return None, None
 
-def get_current_weather():
-    latitude, longitude = User_Current_Location()
+def get_current_weather(latitude, longitude):
     url = f'http://api.openweathermap.org/data/2.5/weather?lat={latitude}&lon={longitude}&appid=6b33a74b8dd94a967b2622a5eb6c1d93&units=metric'
     response = requests.get(url)
     data = response.json()
@@ -129,8 +128,7 @@ def get_current_weather():
     } 
     return current_condition
 
-def get_address_nominatim():
-    latitude, longitude = User_Current_Location()
+def get_address_nominatim(latitude, longitude):
     url = f"https://nominatim.openstreetmap.org/reverse?lat={latitude}&lon={longitude}&format=json"
     headers = {
         'User-Agent': 'WeatherForecastingAPP/1.0 (ankitkumar875740l@example.com)'  # Replace with your app name and email
@@ -149,9 +147,8 @@ def get_address_nominatim():
         'Country': address.get('country', 'Unknown')
     }
 
-def fetch_current_weather_forecast():
+def fetch_current_weather_forecast(latitude, longitude):
     num_days = 5
-    latitude, longitude = User_Current_Location()
     # 7-Day Forecast API (One Call API)
     forecast_url = f"https://api.openweathermap.org/data/3.0/onecall?lat={latitude}&lon={longitude}&exclude=minutely,hourly,alerts&appid=6b33a74b8dd94a967b2622a5eb6c1d93&units=metric"
     forecast_response = requests.get(forecast_url)
@@ -220,9 +217,9 @@ def index():
     # latitude, longitude = User_Current_Location()
     latitude = 253442.7
     longitude = 850933.8
-    location = get_address_nominatim() if latitude and longitude else None
-    current_weather = get_current_weather() if latitude and longitude else None
-    current_location_forecast = fetch_current_weather_forecast() if latitude and longitude else []
+    location = get_address_nominatim(latitude, longitude)
+    current_weather = get_current_weather(latitude, longitude)
+    current_location_forecast = fetch_current_weather_forecast(latitude, longitude)
 
     return render_template('index.html',
                            latitude=latitude,
