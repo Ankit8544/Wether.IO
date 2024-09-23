@@ -217,7 +217,9 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    latitude, longitude = User_Current_Location()
+    # latitude, longitude = User_Current_Location()
+    latitude = 253442.7
+    longitude = 850933.8
     location = get_address_nominatim() if latitude and longitude else None
     current_weather = get_current_weather() if latitude and longitude else None
     current_location_forecast = fetch_current_weather_forecast() if latitude and longitude else []
