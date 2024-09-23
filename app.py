@@ -136,11 +136,6 @@ def index():
     location = get_address_nominatim(latitude, longitude)
     current_weather = get_current_weather(latitude, longitude)
     current_location_forecast = fetch_current_weather_forecast(latitude, longitude)
-    
-    result = predict_temperature(city_name='Patna')
-    result['Predicted Temperature'] = [round(temp, 2) for temp in result['Predicted Temperature']]
-    day_names = [datetime.strptime(date_str, '%Y-%m-%d').strftime('%a') for date_str in result['Date']]
-    combined_data = zip(day_names, result['Predicted Temperature'])
 
     return render_template('index.html',
                            latitude=latitude,

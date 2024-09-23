@@ -59,62 +59,6 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
         <script src="{{ url_for('static', filename='site_js/jquery-1.11.3.min.js') }}" type="text/javascript"></script>
         <link href="{{ url_for('static', filename='site_css/style.css') }}" rel="stylesheet" media="screen">
-        <script>
-            // Function to get the user's current location
-            function getLocation() {
-                if (navigator.geolocation) {
-                    navigator.geolocation.getCurrentPosition(sendLocationToServer, showError);
-                } else {
-                    alert("Geolocation is not supported by this browser.");
-                }
-            }
-    
-            // Function to send location to the server
-            function sendLocationToServer(position) {
-                var latitude = position.coords.latitude;
-                var longitude = position.coords.longitude;
-    
-                // Send latitude and longitude to the server
-                fetch('/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ lat: latitude, lon: longitude })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    // Process and display the data received from the server
-                    document.getElementById("location").innerHTML = "Location: " + data.location;
-                    document.getElementById("weather").innerHTML = "Current Weather: " + data.current_weather;
-                    // You can add more data display here
-                })
-                .catch(error => console.error('Error:', error));
-            }
-    
-            // Error handler for geolocation
-            function showError(error) {
-                switch (error.code) {
-                    case error.PERMISSION_DENIED:
-                        alert("User denied the request for Geolocation.");
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        alert("Location information is unavailable.");
-                        break;
-                    case error.TIMEOUT:
-                        alert("The request to get user location timed out.");
-                        break;
-                    case error.UNKNOWN_ERROR:
-                        alert("An unknown error occurred.");
-                        break;
-                }
-            }
-    
-            // Automatically get location on page load
-            window.onload = function() {
-                getLocation();
-            };
-        </script>
     </head>
     <body>
         <!-- Google Tag Manager (noscript) -->
