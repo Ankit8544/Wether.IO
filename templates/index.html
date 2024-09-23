@@ -163,14 +163,13 @@
                                 <span data-api="current_temperature" class="temperature">{{ current_weather.get('Current Temperature', 'Not available') }}°C</span>
                             </div>
                             <div data-api="forecast_week" class="week">
-                                {% for day, temperature in result %}
+                                {% for day in current_location_forecast %}
                                     <div class="day">
-                                        <span class="name">{{ day }}</span>
-                                        <i class="{{ 'full_clouds' if temperature < 20 else 'no_icon' }}"></i>
-                                        <span class="temperature">{{ temperature }}°C</span>
+                                        <span class="name">{{ day['Day Name'][:3].upper() }}</span>
+                                        <i class="{{ 'full_clouds' if day['Weather Description'] else 'no_icon' }}"></i>
+                                        <span class="temperature">{{ day['Temperature (°C)'] }}°C</span>
                                     </div>
                                 {% endfor %}
-
                             </div>
                         </div>
                     {% else %}
