@@ -1,7 +1,9 @@
 /* MOBILE HEADER TOGGLE */
 $('body').on('click', '[data-header-toggle="true"]', function() {
+
     $('.header ul').slideToggle(100);
     $('body').toggleClass('overflow_hidden');
+
 });
 
 /* TRANSLATE WEATHER DESCRIPTION TO ICON CLASS AND DISPLAY TEXT */
@@ -48,3 +50,4 @@ function weatherDescriptionToClass(description) {
     }
     return [iconClass, weatherDescription];
 }
+
