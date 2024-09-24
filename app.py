@@ -4,6 +4,7 @@ import requests
 import numpy as np
 from keras.models import load_model
 import pickle
+import os
 from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings('ignore')
@@ -90,41 +91,61 @@ def fetch_current_weather_forecast(latitude, longitude):
 
 ### METO CITY DETAIL -
 # Function to load the model and scaler
-def load_model_and_scaler(city_name):
-    model = load_model(f"./artifacts/{city_name}_model.h5")#{city_name}_model.h5")
-    with open(f"./artifacts/{city_name}_scaler.pkl", 'rb') as f:
+def load_model_and_scaler_X_test(city_name):
+    # Load the scaler
+    with open(os.path.join(f"./artifacts/{city_name}_scaler.pkl"), 'rb') as f:
         scaler = pickle.load(f)
-    return model, scaler
+
+    # Load the last 7 days of test data
+    with open(os.path.join(f"./artifacts/{city_name}_X_test_last_7_days.pkl"), 'rb') as f:
+        X_test_last_7_days = pickle.load(f)
+        
+    model = load_model(f"./artifacts/{city_name}_model.h5")
+    
+    return model, scaler, X_test_last_7_days
 
 # Function to make predictions
 def predict_temperature(city_name):
-    model, scaler = load_model_and_scaler(city_name)
+    model, scaler, X_test_last_7_days = load_model_and_scaler_X_test(city_name)
     
-    # Prepare the last 7 days of test data
-    last_7_days = np.random.rand(7, 3)  # Replace with actual last 7 days data
-    last_7_days_scaled = scaler.transform(last_7_days)
-    
+    # Prepare to hold predictions
     predictions = []
-    input_sequence = last_7_days_scaled.copy()
+    predicted_scaled_input = X_test_last_7_days[0]  # Start with the last input used for prediction
 
-    for _ in range(5):  # Predict for the next 5 days
-        pred = model.predict(np.array([input_sequence]))
-        predictions.append(pred[0][0])
+    # Predict for the next 5 days
+    for _ in range(5):
+        # Make a prediction
+        predicted_scaled_temp_avg = model.predict(predicted_scaled_input.reshape(1, 7, 3))
         
-        pred_reshaped = np.zeros((1, input_sequence.shape[1]))
-        pred_reshaped[0, 0] = pred
+        # Prepare for inverse transform
+        # Create an array with the same shape as the original feature space
+        pred_input = np.zeros((1, 3))
+        pred_input[0, 0] = predicted_scaled_temp_avg.flatten()[0]  # Fill with predicted value
+        # Fill humidity and wind speed with the last values or some sensible defaults
+        pred_input[0, 1] = X_test_last_7_days[0][-1][1]  # Last humidity value
+        pred_input[0, 2] = X_test_last_7_days[0][-1][2]  # Last wind speed value
+
+        # Inverse transform to get actual temperature value
+        predicted_temp_avg = scaler.inverse_transform(pred_input)
         
-        input_sequence = np.vstack((input_sequence[1:], pred_reshaped))
-    
-    # Inverse transform predictions back to original scale
-    predictions = scaler.inverse_transform([[pred, 0, 0] for pred in predictions])[:, 0]
-    
-    predicted_dates = [(datetime.now().date() + timedelta(days=i+1)).strftime('%Y-%m-%d') for i in range(5)]
-    return {
-        'Date': predicted_dates,
-        'Predicted Temperature': predictions
+        # Round the predicted temperature to two decimals
+        rounded_temp = round(predicted_temp_avg[0][0], 2)
+        predictions.append(rounded_temp)  # Store the rounded predicted temperature
+
+        # Update the input for the next prediction
+        predicted_scaled_input = np.append(predicted_scaled_input[1:], pred_input, axis=0)
+
+    # Get the current date and calculate the next 5 dates
+    today = datetime.now()
+    predicted_days = [(today + timedelta(days=i)).strftime('%A') for i in range(1, 6)]
+
+    # Create the dictionary output
+    result_dict = {
+        'Days': predicted_days,
+        'Predicted Temperature': np.array(predictions)  # Store predictions as an array
     }
-
+    
+    return result_dict
 
 app = Flask(__name__)
 
@@ -146,12 +167,13 @@ def index():
 
 @app.route('/predict', methods=['GET', 'POST'])
 def predict():
-    CITY_NAME = request.args.get('city','Patna')
+    CITY_NAME = request.args.get('city', 'Patna')
     result = predict_temperature(city_name=CITY_NAME)
-    result['Predicted Temperature'] = [round(temp, 2) for temp in result['Predicted Temperature']]
-    day_names = [datetime.strptime(date_str, '%Y-%m-%d').strftime('%a') for date_str in result['Date']]
+    # Convert predicted temperatures to a list
+    result['Predicted Temperature'] = result['Predicted Temperature'].tolist()
+    day_names = result['Days']
     combined_data = zip(day_names, result['Predicted Temperature'])
     return render_template('report.html', dates=day_names, temperatures=result['Predicted Temperature'], result=combined_data, city_name=CITY_NAME)
-    
+  
 if __name__ == '__main__':
     app.run()
